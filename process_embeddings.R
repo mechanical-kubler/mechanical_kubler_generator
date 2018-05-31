@@ -13,7 +13,7 @@ rkm_objects <- rkmo %>%
   mutate(
     stripped_id = str_replace(id, "^nl-", ""),
     filename = str_c(stripped_id, "jpeg", sep = "."),
-    object_url = str_c("https://rijksmuseum.nl/en/collection", stripped_id, sep = "/"))
+    object_url = str_c("https://www.rijksmuseum.nl/en/search?q=", stripped_id, sep = ""))
 
 
 embeddings <- raw_embeddings %>%
@@ -29,4 +29,4 @@ available_objects <- rkm_objects %>%
 # Reorder embeddings to sort by date
 embeddings <- embeddings[available_objects$filename,]
 
-save(embeddings, available_objects, file = "rkm_embeddings.RData")
+save(embeddings, available_objects, file = "rkm_embeddings.RData", compress = "xz")
