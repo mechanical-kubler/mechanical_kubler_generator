@@ -1,64 +1,75 @@
-library(tidyverse)
-# Not yet published on CRAN - source available at https://github.com/mdlincoln/pathway
+# devtools::install_github("mdlincoln/pathway")
 library(pathway)
-library(DBI)
+library(stringr)
+library(fs)
 
-db <- dbConnect(RSQLite::SQLite(), "embeddings.db.sqlite")
-raw_embeddings <- tbl(db, "embeddings") %>%
-  collect()
-db_disconnect(db)
+#load("rkm_embeddings.RData")
 
-rkmo <- read_csv("rkm_urls.csv", col_names = c("id", "url"))
+# Identify two indices to build a path between
+collect_candidates <- function(em, obj) {
+  p1 <- sample.int(nrow(obj), 1)
+  # Find another object
+  p2 <- sample(1:nrow(embeddings)[-p1], 1)
 
-rkm_objects <- rkmo %>%
-  distinct(id, url) %>%
-  na.omit() %>%
-  mutate(
-    stripped_id = str_replace(id, "^nl-", ""),
-    filename = str_c(stripped_id, "jpeg", sep = "."),
-    object_url = str_c("https://rijksmuseum.nl/en/collection", stripped_id, sep = "/"))
+  get_nav_constraint(p1, p2)
+}
 
+# Determine constraints on that pathway
+get_nav_constraint <- function(p1, p2) {
+  cst <- c("any-unique" = 5,
+          "chronological" = 5)
 
-display_embed <- raw_embeddings %>% select(filename)
+  choice <- sample(names(cst), size = 1, prob = cst)
 
-embeddings <- raw_embeddings %>%
-  semi_join(rkm_objects, by = "filename") %>%
-  column_to_rownames("filename") %>%
-  as.matrix()
-dim(embeddings)
+  if (p1 > p2 & choice == "chronological") {
+    list(
+      p1 = p1,
+      p2 = p2,
+      nav = navigate_ordered_desc
+    )
+  } else if (p1 < p2 & choice == "chronological") {
+    list(
+      p1 = p1,
+      p2 = p2,
+      nav = navigate_ordered
+    )
+  } else {
+    list(
+      p1 = p1,
+      p2 = p2,
+      nav = navigate_unique
+    )
+  }
+}
 
-available_objects <- rkm_objects %>%
-  filter(filename %in% rownames(embeddings))
-
-p1 <- sample.int(nrow(embeddings), 1)
-p2 <- sample(1:nrow(embeddings)[-p1], 1)
-
-pth <- pathway(embeddings, p1, p2, n = 8, verbose = TRUE)
-fs::file_copy(gif_path(pth), "path.gif", overwrite = TRUE)
 
 # From a given filename, pull up the proper url and download the content to a temporary file. Return the path of the temporary file.
-pull_file <- function(filename) {
-  url <- str_replace(rkm_objects[["url"]][which(rkm_objects$filename == filename)], "=s0", "=s600")
-  localpath <- tempfile(fileext = ".jpeg")
+pull_file <- function(filename, obj) {
+  url <- str_replace(obj[["url"]][which(obj$filename == filename)], "=s0", "=s600")
+  localpath <- file_temp(ext = ".jpeg")
   res <- download.file(url, localpath)
   if (res != 0)
     stop(filename, ": image download issue at ", url)
   return(localpath)
 }
 
-gif_path <- function(pth) {
-  filenames <- rkm_objects$filename[pth$i]
-  localpaths <- map_chr(filenames, pull_file)
+gif_path <- function(pth, obj) {
+  filenames <- obj$filename[pth$i]
+  localpaths <- vapply(filenames, pull_file, obj = obj, FUN.VALUE = character(1))
   bound_paths <- str_c(localpaths, collapse = " ")
   rev_bound_paths <- str_c(rev(localpaths), collapse = " ")
+
   system(str_glue("mogrify -resize 500x500 -gravity center -background black -extent 500x500 {bound_paths}"))
-  #system("convert -size 500x500 xc:black blank.jpeg")
-  gifpath <- tempfile(fileext = ".gif")
+  gifpath <- file_temp(ext = ".gif")
   system(str_glue("convert -dispose previous -delay 125 -loop 0 {bound_paths} {rev_bound_paths} {gifpath}"))
   return(gifpath)
 }
 
+generate_tweet <- function(em, obj, n = 8) {
+  candidates <- collect_candidates(em, obj)
+  pth <- pathway(em, candidates$p1, candidates$p2, n, navigator = candidates$nav, verbose = TRUE)
+  gif_path(pth, obj)
+}
 
-plot_pathway(embeddings, pth, pca = TRUE)
-
+file_copy(generate_tweet(embeddings, available_objects), new_path = "path.gif", overwrite = TRUE)
 
