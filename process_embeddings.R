@@ -1,16 +1,23 @@
+# one-time code for processing the embeddings derived from the VGG-16
+# pre-trained CNN and cross-referencing them against the image and website urls
+# scraped from the Rijskmuseum API.
+#
+# The resulting .RData file is the core data file used by the applciation.
+
 library(tidyverse)
 library(DBI)
 
-db <- dbConnect(RSQLite::SQLite(), "embeddings.db.sqlite")
+db <- dbConnect(RSQLite::SQLite(), "~/Desktop/embeddings.db.sqlite")
 raw_embeddings <- tbl(db, "embeddings") %>%
   collect()
 db_disconnect(db)
 
-rkmo <- read_csv("rkm_urls.csv", col_names = c("id", "date_early", "date_late", "url"))
+rkmo <- read_csv("~/Desktop/rkm_urls.csv", col_names = c("id", "date_early", "date_late", "url"))
 
 rkm_objects <- rkmo %>%
   na.omit() %>%
   mutate(
+    url = str_replace(url, "http:", "https:"),
     stripped_id = str_replace(id, "^nl-", ""),
     filename = str_c(stripped_id, "jpeg", sep = "."),
     object_url = str_c("https://www.rijksmuseum.nl/en/search?q=", stripped_id, sep = ""))
