@@ -4,8 +4,8 @@ library(stringr)
 library(fs)
 library(digest)
 library(yaml)
-
-#load("rkm_embeddings.RData")
+library(rtweet)
+library(git2r)
 
 # Decide start and end points
 mark_pathway <- function(em, obj) {
@@ -101,7 +101,7 @@ see <- function(path, viewer = getOption("viewer")) {
   viewer(path)
 }
 
-generate_tweet <- function(em, obj, n = 8) {
+generate_path <- function(em, obj, n = 8) {
   candidates <- mark_pathway(em, obj)
   message(str_glue("p1: {candidates$p1}, p2: {candidates$p2}, nav: {candidates$type}"))
   pth <- pathway(em, candidates$p1, candidates$p2, n, navigator = candidates$nav, verbose = TRUE)
@@ -110,6 +110,7 @@ generate_tweet <- function(em, obj, n = 8) {
   weblinks <- obj$object_url[pth$i]
   path_hash <- digest(weblinks)
   imglinks <- str_replace(obj[["url"]][pth$i], "=s0", "=s200")
+  imgdates <- obj$date_early[pth$i]
 
   list(
     type = candidates$type,
@@ -118,23 +119,41 @@ generate_tweet <- function(em, obj, n = 8) {
     imglinks = imglinks,
     gif_path = gif_path,
     path_path = path_path,
+    imgdates = imgdates,
     date = as.character(Sys.time())
   )
 }
 
-path_data <- generate_tweet(embeddings, available_objects)
+jekyll_path <- function() "../mechanical_kubler"
 
-write_post <- function(path_data, basepath = "../rkm_pathways") {
-  transposed_links <- mapply(function(x, y) list(weblink = x, imglink = y), path_data$weblink, path_data$imglinks, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+write_post <- function(path_data, basepath = jekyll_path()) {
+  transposed_links <- mapply(function(x, y, z) list(weblink = x, imglink = y, year = z), path_data$weblink, path_data$imglinks, path_data$imgdates, SIMPLIFY = FALSE, USE.NAMES = FALSE)
 
   frontmatter <- c(list(layout = "pathway", title = path_data$path_hash), path_data[c("type", "path_hash", "date")], list(objects = transposed_links))
   post_text <- str_c("---", as.yaml(frontmatter), "---", sep = "\n")
   post_path <- path(basepath, "_pathways", path_data$path_hash, ext = "md")
   writeLines(post_text, con = post_path)
   file_copy(path_data$path_path, path(basepath, "assets/images", path_data$path_hash, ext = "png"), overwrite = TRUE)
+  file_copy(path_data$gif_path, path(basepath, "assets/images", path_data$path_hash, ext = "gif"))
 }
 
-write_post(path_data)
+push_post <- function(repo_path = jekyll_path()) {
+  r <- repository(repo_path)
+  tok <- cred_token()
+  pull(r, credentials = tok)
+  add(r, ".")
+  commit(r, "Commiting new path")
+  push(r, credentials = tok)
+}
 
-walk(1:10, function(x) write_post(generate_tweet(embeddings, available_objects)))
+send_tweet <- function(path_data) {
+  tmsg <- switch(path_data$type,
+               "any-unique" = "A unique walk between two objects @rijksmuseum",
+               "chronological-forwards" = "A walk forwards through time between two objects, from {path_data$imgdates[1]} to {path_data$imgdates[2]}",
+               "chronological-backwards" = "A walk backwards through time between two objects, from {path_data$imgdates[1]} to {path_data$imgdates[2]}")
 
+  post_tweet(
+    status = str_glue("{tmsg}: https://matthewlincoln.net/mechanical_kubler/pathways/{path_data$hash}.html"),
+    media = path_data$gif_path
+  )
+}
