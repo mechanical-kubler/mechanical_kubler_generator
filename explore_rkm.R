@@ -174,9 +174,9 @@ push_post <- function(repo_path = jekyll_path()) {
 # Compose the tweet, attach the gif, and send.
 send_tweet <- function(path_data) {
   if (path_data$type == "chronological-forwards") {
-    tmsg <- str_glue("A walk forwards through time between two objects @rijksmuseum, from {path_data$imgdates[1]} to {path_data$imgdates[2]}")
+    tmsg <- str_glue("A walk forwards through time between two objects @rijksmuseum, from {min(path_data$imgdates)} to {max(path_data$imgdates)}")
   } else if (path_data$type == "chronological-backwards") {
-    tmsg <- str_glue("A walk backwards through time between two objects @rijksmuseum, from {path_data$imgdates[1]} to {path_data$imgdates[2]}")
+    tmsg <- str_glue("A walk backwards through time between two objects @rijksmuseum, from {min(path_data$imgdates)} to {max(path_data$imgdates)}")
   } else {
     tmsg <- "A unique walk between two objects @rijksmuseum"
   }
