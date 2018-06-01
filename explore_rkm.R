@@ -176,7 +176,7 @@ send_tweet <- function(path_data) {
   if (path_data$type == "chronological-forwards") {
     tmsg <- str_glue("A walk forwards through time between two objects @rijksmuseum, from {min(path_data$imgdates)} to {max(path_data$imgdates)}")
   } else if (path_data$type == "chronological-backwards") {
-    tmsg <- str_glue("A walk backwards through time between two objects @rijksmuseum, from {min(path_data$imgdates)} to {max(path_data$imgdates)}")
+    tmsg <- str_glue("A walk backwards through time between two objects @rijksmuseum, from {max(path_data$imgdates)} to {min(path_data$imgdates)}")
   } else {
     tmsg <- "A unique walk between two objects @rijksmuseum"
   }
