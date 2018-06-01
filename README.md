@@ -6,6 +6,18 @@ Playing on George Kubler's anthropology of the history of visual style, _The Sha
 
 It will produce both an animated GIF that is tweeted under [@MechaKubler](https://twitter.com/MechaKubler), as well as a companion HTML page showing the full timeline at <https://mechanical-kubler.github.io>.
 
+## Deploy
+
+1. Generate a GitHub personal access token and save it to `GITHUB_PAT` in your `.Renviron`
+2. Use the `rtweet` package to generate an OAuth token for the app, and similarly make sure this is copied into your `.Renviron`
+
+Build and run the container, passing the `.Renviron` and `.rtweet_token.rds` in as volumes:
+
+```
+docker build -t kubler .
+docker container run -it --rm -v mechanical_kubler_generator/.Renviron:/home/rstudio/mechanical_kubler_generator/.Renviron -v mechanical_kubler_generator/.rtweet_token.rds:/home/rstudio/mechanical_kubler_generator/.rtweet_token.rds kubler
+```
+
 ## Outline
 
 Inspired by Google Cultural Institute's ["X Degrees of Separation"](https://artsexperiments.withgoogle.com/xdegrees/), I was curious to see if it was possible to recreate that app by hand using a smaller collection of works, and constraining the kinds of paths that would get drawn between two given artworks.
