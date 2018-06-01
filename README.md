@@ -4,7 +4,7 @@ Playing on George Kubler's anthropology of the history of visual style, _The Sha
 
 [^kubler]: George Kubler, _The Shape of Time: Remarks on the History of Things_ (New Haven: Yale University Press, 1962).
 
-It will produce both an animated GIF that is tweeted under [@MechanicalKub1](https://twitter.com/MechanicalKubl1), as well as a companion HTML page showing the full timeline at <https://mechanical-kubler.github.io>.
+It will produce both an animated GIF that is tweeted under [@MechaKubler](https://twitter.com/MechaKubler), as well as a companion HTML page showing the full timeline at <https://mechanical-kubler.github.io>.
 
 ## Outline
 
