@@ -147,13 +147,16 @@ push_post <- function(repo_path = jekyll_path()) {
 }
 
 send_tweet <- function(path_data) {
-  tmsg <- switch(path_data$type,
-               "any-unique" = "A unique walk between two objects @rijksmuseum",
-               "chronological-forwards" = "A walk forwards through time between two objects, from {path_data$imgdates[1]} to {path_data$imgdates[2]}",
-               "chronological-backwards" = "A walk backwards through time between two objects, from {path_data$imgdates[1]} to {path_data$imgdates[2]}")
+  if (path_data$type = "chronological-forwards") {
+    tmsg <- str_glue("A walk forwards through time between two objects @rijksmuseum, from {path_data$imgdates[1]} to {path_data$imgdates[2]}")
+  } else if (path_data$type == "chronological-backwards") {
+    tmsg <- str_glue("A walk backwards through time between two objects @rijksmuseum, from {path_data$imgdates[1]} to {path_data$imgdates[2]}")
+  } else {
+    tmsg <- "A unique walk between two objects @rijksmuseum"
+  }
 
   post_tweet(
-    status = str_glue("{tmsg}: https://matthewlincoln.net/mechanical_kubler/pathways/{path_data$hash}.html"),
+    status = str_glue("{tmsg}: https://matthewlincoln.net/mechanical_kubler/pathways/{path_data$path_hash}.html"),
     media = path_data$gif_path
   )
 }
