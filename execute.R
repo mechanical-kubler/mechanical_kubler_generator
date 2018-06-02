@@ -1,3 +1,4 @@
+library(fs)
 library(git2r)
 source("explore_rkm.R")
 
@@ -5,7 +6,8 @@ load("rkm_embeddings.RData")
 
 # Configure git/github access for pushing HTML pages that will be linked to in tweets
 config(global = TRUE, user.name = "Matthew Lincoln", user.email = "matthew.d.lincoln@gmail.com")
-clone(url = "https://github.com/mechanical-kubler/rkm.git", jekyll_path())
+if (!dir_exists(jekyll_path()))
+  clone(url = "https://github.com/mechanical-kubler/rkm.git", jekyll_path())
 
 # Tweet once an hour
 wait_time <- 60 * 60
